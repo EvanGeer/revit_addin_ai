@@ -24,7 +24,7 @@ namespace MyNewProject
             string concatenatedIds = string.Join(",", ids.Select(id => id.IntegerValue.ToString()));
 
             // Start a transaction to create DirectShapes
-            using (Transaction tx = new Transaction(doc, "Add Spheres"))
+            using (Transaction tx = new Transaction(doc, "Add Vertical Lines"))
             {
                 tx.Start();
 
@@ -48,16 +48,15 @@ namespace MyNewProject
                         continue;
                     }
 
-                    // Create a sphere solid at the location
-                    double radius = 0.5; // 1' diameter
-                    Solid sphere = CreateSphere(location, radius);
+                    // Create a vertical line 1' tall at the location
+                    Line verticalLine = CreateVerticalLine(location, 1.0);
 
-                    if (sphere != null)
+                    if (verticalLine != null)
                     {
-                        // Create a DirectShape and add the sphere geometry
+                        // Create a DirectShape and add the line geometry
                         DirectShape ds = DirectShape.CreateElement(doc, new ElementId(BuiltInCategory.OST_GenericModel));
-                        ds.SetShape(new List<GeometryObject> { sphere });
-                        ds.Name = "SelectionSphere";
+                        ds.SetShape(new List<GeometryObject> { verticalLine });
+                        ds.Name = "SelectionLine";
                     }
                 }
 
@@ -69,36 +68,11 @@ namespace MyNewProject
             return Result.Succeeded;
         }
 
-        // Helper to create a sphere solid at a given location
-        private Solid CreateSphere(XYZ center, double radius)
+        // Helper to create a vertical line 1' tall at a given location
+        private Line CreateVerticalLine(XYZ basePoint, double height)
         {
-            // Create a semicircle in the XZ plane
-            Arc arc = Arc.Create(
-                new XYZ(center.X, center.Y, center.Z - radius),
-                new XYZ(center.X, center.Y, center.Z + radius),
-                new XYZ(center.X + radius, center.Y, center.Z)
-            );
-
-            CurveLoop profile = new CurveLoop();
-            profile.Append(arc);
-
-            // Axis of revolution: vertical through the center
-            Line axis = Line.CreateBound(
-                new XYZ(center.X, center.Y, center.Z - radius - 1),
-                new XYZ(center.X, center.Y, center.Z + radius + 1)
-            );
-
-            try
-            {
-                // This signature is available in Revit 2022+
-                return GeometryCreationUtilities.CreateRevolvedGeometry(
-                    new List<CurveLoop> { profile }, 0, 2 * Math.PI, axis
-                );
-            }
-            catch
-            {
-                return null;
-            }
+            XYZ topPoint = new XYZ(basePoint.X, basePoint.Y, basePoint.Z + height);
+            return Line.CreateBound(basePoint, topPoint);
         }
     }
 } 
